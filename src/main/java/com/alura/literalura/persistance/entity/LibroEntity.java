@@ -19,7 +19,7 @@ public class LibroEntity {
 
     private Long numeroDescargas;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "autor_id")
     private AutorEntity autor;
 

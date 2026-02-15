@@ -35,7 +35,7 @@ public class GutendexClient {
     public Optional<GutendexLibroDTO> searchFirstByTitle(String title) {
         try {
             String q = URLEncoder.encode(title, StandardCharsets.UTF_8);
-            String uri = BASE + "?search=" + q;
+            String uri = BASE + "/?search=" + q;
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(uri))
                     .GET()

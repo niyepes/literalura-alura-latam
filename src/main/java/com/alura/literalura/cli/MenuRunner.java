@@ -4,6 +4,7 @@ import com.alura.literalura.persistance.entity.AutorEntity;
 import com.alura.literalura.persistance.entity.LibroEntity;
 import com.alura.literalura.service.AutorService;
 import com.alura.literalura.service.LibroService;
+import jakarta.transaction.Transactional;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
@@ -79,6 +80,7 @@ public class MenuRunner implements CommandLineRunner {
         }
     }
 
+    @Transactional
     private void listarLibrosRegistrados() {
         List<LibroEntity> libros = bookService.listarTodos();
         if (libros.isEmpty()) {
