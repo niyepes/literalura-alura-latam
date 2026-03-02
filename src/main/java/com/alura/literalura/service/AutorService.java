@@ -20,6 +20,10 @@ public class AutorService {
         return autorRepository.findByNombre(nombre);
     }
 
+    public List<AutorEntity> buscarPorNombre(String nombre) {
+        return autorRepository.findByNombreContainingIgnoreCase(nombre);
+    }
+
     @Transactional
     public AutorEntity save(AutorEntity autor) {
         return autorRepository.save(autor);

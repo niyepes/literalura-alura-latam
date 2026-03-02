@@ -10,6 +10,9 @@ import java.util.Optional;
 @Repository
 public interface AutorRepository extends JpaRepository<AutorEntity, Long> {
     Optional<AutorEntity> findByNombre(String nombre);
+    
+    // Búsqueda parcial (case-insensitive)
+    List<AutorEntity> findByNombreContainingIgnoreCase(String nombre);
 
     // derived queries que usaremos
     List<AutorEntity> findByAnoNacimientoLessThanEqual(Integer year);

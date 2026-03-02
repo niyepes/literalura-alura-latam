@@ -168,12 +168,16 @@ public class MenuRunner implements CommandLineRunner {
             System.out.println("Nombre inválido.");
             return;
         }
-        // simple search by full name exact
-        var opt = authorService.findByNombre(nombre);
-        if (opt.isPresent()) {
-            System.out.println(opt.get());
+        // Búsqueda parcial (case-insensitive)
+        List<AutorEntity> resultados = authorService.buscarPorNombre(nombre);
+        if (resultados.isEmpty()) {
+            System.out.println("No se encontró ningún autor con ese nombre.");
         } else {
-            System.out.println("Autor no encontrado por nombre exacto. (Podrías implementar búsqueda partial en repo)");
+            System.out.println("Autores encontrados:");
+            for (AutorEntity a : resultados) {
+                System.out.println("-----------------------------");
+                System.out.println(a);
+            }
         }
     }
 }
