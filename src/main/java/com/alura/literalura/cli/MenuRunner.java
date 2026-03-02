@@ -10,7 +10,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Scanner;
 
 @Component
@@ -72,11 +71,13 @@ public class MenuRunner implements CommandLineRunner {
             System.out.println("Título inválido.");
             return;
         }
+        
         EnumResultadoGuardar resultado = bookService.buscarYGuardarPorTitulo(titulo);
+        
         switch (resultado) {
-            case GUARDADO -> System.out.println("Libro encontrado y guardado exitosamente.");
-            case YA_EXISTE -> System.out.println("El libro ya existe en la base de datos.");
-            case NO_ENCONTRADO -> System.out.println("No se encontró ningún libro con ese título en la API.");
+            case GUARDADO -> System.out.println("✅ Libro encontrado y guardado exitosamente.");
+            case YA_EXISTE -> System.out.println("⚠️ El libro ya existe en la base de datos.");
+            case NO_ENCONTRADO -> System.out.println("❌ No se encontró ningún libro con ese título en la API.");
         }
     }
 
