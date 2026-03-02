@@ -10,6 +10,7 @@ import com.alura.literalura.persistance.repository.LibroRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -28,72 +29,66 @@ public class LibroService {
     }
 
     @Transactional
-    public Optional<LibroEntity> buscarYGuardarPorTitulo(String tituloBusqueda) {
-        if (tituloBusqueda == null || tituloBusqueda.isBlank()) {
+    public EnumResultadoGuardar buscarYGuardarPorTitulo(String titulo) {
+
+        List<LibroEntity> similares =
+                libroRepository.findByTituloContainingIgnoreCase(titulo);
+
+        boolean existeExacto = similares.stream()
+                .anyMatch(libro ->
+                        libro.getTitulo().equalsIgnoreCase(titulo));
+
+        if (existeExacto) {
+            return EnumResultadoGuardar.YA_EXISTE;
+        }
+
+        Optional<LibroEntity> libroOpt = buscarLibroEnApi(titulo);
+
+        if (libroOpt.isEmpty()) {
+            return EnumResultadoGuardar.NO_ENCONTRADO;
+        }
+
+        libroRepository.save(libroOpt.get());
+        return EnumResultadoGuardar.GUARDADO;
+    }
+
+    private Optional<LibroEntity> buscarLibroEnApi(String titulo) {
+        Optional<GutendexLibroDTO> dtoOpt = gutendexClient.searchFirstByTitle(titulo);
+        
+        if (dtoOpt.isEmpty()) {
             return Optional.empty();
         }
-
-        String tituloNormalizado = tituloBusqueda.trim();
-
-        // 1) Evitar duplicados: si ya existe, retornarlo (no insertar otra vez)
-        Optional<LibroEntity> yaExistente = libroRepository.findByTituloContainingIgnoreCase(tituloNormalizado);
-        if (yaExistente.isPresent()) {
-            return yaExistente;
-        }
-
-        // 2) Consultar la API
-        Optional<GutendexLibroDTO> optDto = gutendexClient.searchFirstByTitle(tituloNormalizado);
-        if (optDto.isEmpty()) {
-            return Optional.empty();
-        }
-        GutendexLibroDTO dto = optDto.get();
-
-        // 3) Extraer datos del DTO de forma clara (evita reasignaciones que rompan efectivamente final)
-        final String tituloDto = dto.title != null ? dto.title.trim() : tituloNormalizado;
-
-        final String nombreAutorFinal;
-        final Integer nacimientoFinal;
-        final Integer fallecimientoFinal;
-
+        
+        GutendexLibroDTO dto = dtoOpt.get();
+        
+        // Handle author - create or find existing
+        AutorEntity autor = null;
         if (dto.authors != null && !dto.authors.isEmpty()) {
-            var a = dto.authors.get(0);
-            nombreAutorFinal = a.name != null ? a.name.trim() : "Desconocido";
-            nacimientoFinal = a.birthYear;
-            fallecimientoFinal = a.deathYear;
-        } else {
-            nombreAutorFinal = "Desconocido";
-            nacimientoFinal = null;
-            fallecimientoFinal = null;
+            GutendexAutorDTO autorDto = dto.authors.get(0);
+            Optional<AutorEntity> autorExistente = autorRepository.findByNombre(autorDto.name);
+            autor = autorExistente.orElseGet(() -> {
+                AutorEntity nuevoAutor = new AutorEntity(
+                    autorDto.name,
+                    autorDto.birthYear,
+                    autorDto.deathYear
+                );
+                return autorRepository.save(nuevoAutor);
+            });
         }
-
-        final String idiomaFinal = (dto.languages != null && !dto.languages.isEmpty())
-                ? dto.languages.get(0)
-                : "desconocido";
-
-        final Long descargasFinal = dto.downloadCount != null ? dto.downloadCount.longValue() : 0L;
-
-        // 4) Buscar o crear autor (usando variables final para evitar el problema en lambdas)
-        AutorEntity autor = autorRepository.findByNombre(nombreAutorFinal)
-                .orElseGet(() -> {
-                    AutorEntity nuevo = new AutorEntity(nombreAutorFinal, nacimientoFinal, fallecimientoFinal);
-                    return autorRepository.save(nuevo);
-                });
-
-        // 5) Antes de guardar, volvemos a comprobar duplicado por si otro hilo insertó el libro entre medias.
-        // (Evita insertar dos veces en concurrencia; mejor con restricción DB, ver nota al final)
-        if (libroRepository.findByTituloContainingIgnoreCase(tituloDto).isPresent()) {
-            return libroRepository.findByTituloContainingIgnoreCase(tituloDto);
-        }
-
-        // 6) Crear y persistir libro
-        LibroEntity libro = new LibroEntity(tituloDto, idiomaFinal, descargasFinal, autor);
-        LibroEntity saved = libroRepository.save(libro);
-
-        // 7) mantener la relación bidireccional en memoria (opcional)
-        autor.getLibros().add(saved);
-        autorRepository.save(autor);
-
-        return Optional.of(saved);
+        
+        // Handle language - take first language or default
+        String idioma = (dto.languages != null && !dto.languages.isEmpty()) 
+            ? dto.languages.get(0) 
+            : "unknown";
+        
+        LibroEntity libro = new LibroEntity(
+            dto.title,
+            idioma,
+            dto.downloadCount != null ? dto.downloadCount.longValue() : 0L,
+            autor
+        );
+        
+        return Optional.of(libro);
     }
 
     public java.util.List<LibroEntity> listarTodos() {

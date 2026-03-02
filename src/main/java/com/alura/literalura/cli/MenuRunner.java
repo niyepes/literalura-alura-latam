@@ -3,6 +3,7 @@ package com.alura.literalura.cli;
 import com.alura.literalura.persistance.entity.AutorEntity;
 import com.alura.literalura.persistance.entity.LibroEntity;
 import com.alura.literalura.service.AutorService;
+import com.alura.literalura.service.EnumResultadoGuardar;
 import com.alura.literalura.service.LibroService;
 import jakarta.transaction.Transactional;
 import org.springframework.boot.CommandLineRunner;
@@ -71,12 +72,11 @@ public class MenuRunner implements CommandLineRunner {
             System.out.println("Título inválido.");
             return;
         }
-        Optional<LibroEntity> saved = bookService.buscarYGuardarPorTitulo(titulo);
-        if (saved.isPresent()) {
-            System.out.println("Libro encontrado y guardado:");
-            System.out.println(saved.get());
-        } else {
-            System.out.println("No se encontró ningún libro con ese título en la API.");
+        EnumResultadoGuardar resultado = bookService.buscarYGuardarPorTitulo(titulo);
+        switch (resultado) {
+            case GUARDADO -> System.out.println("Libro encontrado y guardado exitosamente.");
+            case YA_EXISTE -> System.out.println("El libro ya existe en la base de datos.");
+            case NO_ENCONTRADO -> System.out.println("No se encontró ningún libro con ese título en la API.");
         }
     }
 

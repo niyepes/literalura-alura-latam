@@ -10,7 +10,7 @@ import java.util.Optional;
 
 @Repository
 public interface LibroRepository extends JpaRepository<LibroEntity, Long> {
-    Optional<LibroEntity> findByTituloContainingIgnoreCase(String titulo);
+    List<LibroEntity> findByTituloContainingIgnoreCase(String titulo);
 
     List<LibroEntity> findAllByIdioma(String idioma);
 
