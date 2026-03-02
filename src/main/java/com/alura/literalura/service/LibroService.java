@@ -10,7 +10,6 @@ import com.alura.literalura.persistance.repository.LibroRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -31,21 +30,19 @@ public class LibroService {
     @Transactional
     public EnumResultadoGuardar buscarYGuardarPorTitulo(String titulo) {
 
-        List<LibroEntity> similares =
-                libroRepository.findByTituloContainingIgnoreCase(titulo);
-
-        boolean existeExacto = similares.stream()
-                .anyMatch(libro ->
-                        libro.getTitulo().equalsIgnoreCase(titulo));
-
-        if (existeExacto) {
-            return EnumResultadoGuardar.YA_EXISTE;
-        }
-
         Optional<LibroEntity> libroOpt = buscarLibroEnApi(titulo);
 
         if (libroOpt.isEmpty()) {
             return EnumResultadoGuardar.NO_ENCONTRADO;
+        }
+
+        String tituloApi = libroOpt.get().getTitulo();
+
+        Optional<LibroEntity> existente = 
+                libroRepository.findByTituloIgnoreCase(tituloApi);
+
+        if (existente.isPresent()) {
+            return EnumResultadoGuardar.YA_EXISTE;
         }
 
         libroRepository.save(libroOpt.get());
